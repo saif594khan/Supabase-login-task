@@ -9,7 +9,7 @@ const defaultProducts = [
     brand: "Apple Inc.", 
     price: 1099.00, 
     availability: "In Stock",
-    description: "Some quick example text to build on the card title and make up the bulk of the card's content. Supercharged by the next-generation M3 chip, this system features extreme battery efficiency and an ultra-thin aluminum chassis built for developers working on the move.",
+    description: "Supercharged by the next-generation M3 chip, this system features extreme battery efficiency and an ultra-thin aluminum chassis built for developers working on the move.",
     image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=60"
   },
   { 
@@ -18,8 +18,35 @@ const defaultProducts = [
     brand: "Samsung Mobile", 
     price: 1299.99, 
     availability: "Low Stock",
-    description: "Experience the pinnacle of mobile hardware integration. This device features an embedded S-Pen, an advanced titanium framing layer, and multi-lens AI processing mechanics designed to capture raw resolution imagery under extreme low-light environments.",
+    description: "Experience the pinnacle of mobile hardware integration. This device features an embedded S-Pen, an advanced titanium framing layer, and multi-lens AI processing mechanics.",
     image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=500&auto=format&fit=crop&q=60"
+  },
+  {
+    id: 3,
+    name: "UltraWide 34\" Curved Monitor",
+    brand: "LG Electronics",
+    price: 549.99,
+    availability: "In Stock",
+    description: "Maximize your code screen real estate. Features a 144Hz refresh rate, QHD crisp resolution, and a curved IPS panel that makes multi-window frontend debugging a breeze.",
+    image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=500&auto=format&fit=crop&q=60"
+  },
+  {
+    id: 4,
+    name: "Keychron Q1 Mechanical Keyboard",
+    brand: "Keychron",
+    price: 189.50,
+    availability: "Out of Stock",
+    description: "A fully customizable 75% layout mechanical keyboard built with a solid CNC aluminum body, hot-swappable tactile switches, and vibrant south-facing RGB backing links.",
+    image: "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&auto=format&fit=crop&q=60"
+  },
+  {
+    id: 5,
+    name: "ANC Wireless Headphones",
+    brand: "Sony Audio",
+    price: 348.00,
+    availability: "Low Stock",
+    description: "Tune out the office ambient noise and enter deep focus flow state. Delivers industry-leading active noise cancellation, custom EQ layouts, and premium high-res audio playback.",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60"
   }
 ]
 
@@ -55,14 +82,19 @@ function App() {
   const [prodPrice, setProdPrice] = useState('')
   const [prodStock, setProdStock] = useState('In Stock')
 
-  // UPDATED: Dynamically synchronizes application view states with the browser tab document title
+  // Sync state changes with local storage persistence
+  useEffect(() => {
+    localStorage.setItem('storeProducts', JSON.stringify(products))
+  }, [products])
+
+  // Dynamically synchronizes application view states with the browser tab document title
   useEffect(() => {
     if (currentPage === 'home') {
       document.title = 'Home'
     } else if (currentPage === 'signin') {
-      document.title = 'SignIn'
+      document.title = 'Sign In'
     } else if (currentPage === 'signup') {
-      document.title = 'SignUp'
+      document.title = 'Sign Up'
     }
   }, [currentPage])
 
