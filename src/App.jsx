@@ -274,7 +274,7 @@ function App() {
           {/* Navbar Component Layout */}
           <nav className="bg-[#181e24] border-b border-gray-800 shadow-md">
             <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-              <h1 className="text-xl font-bold tracking-tight text-white cursor-pointer">Dashboard</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-white cursor-pointer">Dashboard</h1>
               <div className="flex items-center space-x-6">
                 <button onClick={() => openModal('add')} className="bg-[#0d6efd] text-white px-5 py-2 rounded-lg font-medium shadow hover:bg-[#0b5ed7] transition-colors">
                   + Add Product
@@ -289,7 +289,7 @@ function App() {
           {/* Product Dashboard Cards */}
           <main className="max-w-6xl mx-auto px-6 py-8">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold text-white">Products</h2>
+              <h2 className="text-xl font-semibold text-white">Products</h2>
               <div className="text-sm text-gray-400 font-medium">Total Items: {products.length}</div>
             </div>
 
