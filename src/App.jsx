@@ -90,7 +90,7 @@ function App() {
   // Dynamically synchronizes application view states with the browser tab document title
   useEffect(() => {
     if (currentPage === 'home') {
-      document.title = 'Home'
+      document.title = 'Dashboard'
     } else if (currentPage === 'signin') {
       document.title = 'Sign In'
     } else if (currentPage === 'signup') {
@@ -273,13 +273,13 @@ function App() {
         <div>
           {/* Navbar Component Layout */}
           <nav className="bg-[#181e24] border-b border-gray-800 shadow-md">
-            <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-              <h1 className="text-xl font-bold tracking-tight text-white cursor-pointer">Portal</h1>
-              <div className="flex items-center space-x-4">
-                <button onClick={() => openModal('add')} className="bg-[#0d6efd] text-white px-4 py-2 rounded-lg font-medium shadow hover:bg-[#0b5ed7] transition-colors">
+            <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+              <h1 className="text-xl font-bold tracking-tight text-white cursor-pointer">Dashboard</h1>
+              <div className="flex items-center space-x-6">
+                <button onClick={() => openModal('add')} className="bg-[#0d6efd] text-white px-5 py-2 rounded-lg font-medium shadow hover:bg-[#0b5ed7] transition-colors">
                   + Add Product
                 </button>
-                <button onClick={handleSignOut} className="bg-transparent border border-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors">
+                <button onClick={handleSignOut} className="bg-transparent border border-gray-600 text-gray-300 px-5 py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors">
                   Sign Out
                 </button>
               </div>
@@ -287,7 +287,7 @@ function App() {
           </nav>
 
           {/* Product Dashboard Cards */}
-          <main className="max-w-6xl mx-auto px-4 py-8">
+          <main className="max-w-6xl mx-auto px-6 py-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold text-white">Products</h2>
               <div className="text-sm text-gray-400 font-medium">Total Items: {products.length}</div>
@@ -489,7 +489,7 @@ function App() {
 
               <button 
                 type="submit" 
-                className="w-full mt-2 py-2.5 bg-[#c084fc]/15 text-[#c084fc] border-2 border-transparent rounded-lg font-semibold hover:border-[#c084fc]/50 focus:outline-none transition-all disabled:opacity-50" 
+                className="w-full mt-4 py-2.5 bg-[#c084fc]/15 text-[#c084fc] border-2 border-transparent rounded-lg font-semibold hover:border-[#c084fc]/50 focus:outline-none transition-all disabled:opacity-50" 
                 disabled={loading}
               >
                 {loading ? 'Processing...' : currentPage === 'signup' ? 'Sign Up' : 'Sign In'}
@@ -500,7 +500,7 @@ function App() {
               {currentPage === 'signup' ? 'Already have an account?' : "Don't have an account?"}{' '}
               <button
                 type="button"
-                className="text-[#c084fc] font-semibold underline bg-none border-none p-0 cursor-pointer"
+                className="text-[#c084fc] font-semibold underline bg-none border-none p-0 cursor-pointer ml-1"
                 onClick={() => {
                   setCurrentPage(currentPage === 'signup' ? 'signin' : 'signup')
                   setMessage({ type: '', text: '' })
