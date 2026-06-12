@@ -271,15 +271,23 @@ function App() {
     <div className="w-full min-h-screen bg-[#1e252b] text-gray-200 font-sans">
       {currentPage === 'home' && user ? (
         <div>
-          {/* Navbar Component Layout */}
+          {/* Responsive Navbar Component Layout */}
           <nav className="bg-[#181e24] border-b border-gray-800 shadow-md">
-            <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-              <h1 className="text-2xl font-bold tracking-tight text-white cursor-pointer">Dashboard</h1>
-              <div className="flex items-center space-x-6">
-                <button onClick={() => openModal('add')} className="bg-[#0d6efd] text-white px-5 py-2 rounded-lg font-medium shadow hover:bg-[#0b5ed7] transition-colors">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
+              <h1 className="text-2xl font-bold tracking-tight text-white cursor-pointer self-start sm:self-auto">
+                Dashboard
+              </h1>
+              <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 sm:space-x-4">
+                <button 
+                  onClick={() => openModal('add')} 
+                  className="flex-1 sm:flex-none text-center bg-[#0d6efd] text-white px-3 sm:px-5 py-2 rounded-lg text-sm sm:text-base font-medium shadow hover:bg-[#0b5ed7] transition-colors whitespace-nowrap"
+                >
                   + Add Product
                 </button>
-                <button onClick={handleSignOut} className="bg-transparent border border-gray-600 text-gray-300 px-5 py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors">
+                <button 
+                  onClick={handleSignOut} 
+                  className="flex-1 sm:flex-none text-center bg-transparent border border-gray-600 text-gray-300 px-3 sm:px-5 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-gray-700 transition-colors whitespace-nowrap"
+                >
                   Sign Out
                 </button>
               </div>
@@ -287,7 +295,7 @@ function App() {
           </nav>
 
           {/* Product Dashboard Cards */}
-          <main className="max-w-6xl mx-auto px-6 py-8">
+          <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-white">Products</h2>
               <div className="text-sm text-gray-400 font-medium">Total Items: {products.length}</div>
