@@ -1,532 +1,636 @@
-import { useState, useEffect, useRef } from 'react'
-import { supabase } from './supabase'
-
-// Fallback initial products matching mock data
-const defaultProducts = [
-  { 
-    id: 1, 
-    name: "M3 MacBook Air Pro", 
-    brand: "Apple Inc.", 
-    price: 1099.00, 
-    availability: "In Stock",
-    description: "Supercharged by the next-generation M3 chip, this system features extreme battery efficiency and an ultra-thin aluminum chassis built for developers working on the move.",
-    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500&auto=format&fit=crop&q=60"
-  },
-  { 
-    id: 2, 
-    name: "Galaxy S24 Ultra Phone", 
-    brand: "Samsung Mobile", 
-    price: 1299.99, 
-    availability: "Low Stock",
-    description: "Experience the pinnacle of mobile hardware integration. This device features an embedded S-Pen, an advanced titanium framing layer, and multi-lens AI processing mechanics.",
-    image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=500&auto=format&fit=crop&q=60"
-  },
-  {
-    id: 3,
-    name: "UltraWide 34\" Curved Monitor",
-    brand: "LG Electronics",
-    price: 549.99,
-    availability: "In Stock",
-    description: "Maximize your code screen real estate. Features a 144Hz refresh rate, QHD crisp resolution, and a curved IPS panel that makes multi-window frontend debugging a breeze.",
-    image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=500&auto=format&fit=crop&q=60"
-  },
-  {
-    id: 4,
-    name: "Keychron Q1 Mechanical Keyboard",
-    brand: "Keychron",
-    price: 189.50,
-    availability: "Out of Stock",
-    description: "A fully customizable 75% layout mechanical keyboard built with a solid CNC aluminum body, hot-swappable tactile switches, and vibrant south-facing RGB backing links.",
-    image: "https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&auto=format&fit=crop&q=60"
-  },
-  {
-    id: 5,
-    name: "ANC Wireless Headphones",
-    brand: "Sony Audio",
-    price: 348.00,
-    availability: "Low Stock",
-    description: "Tune out the office ambient noise and enter deep focus flow state. Delivers industry-leading active noise cancellation, custom EQ layouts, and premium high-res audio playback.",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60"
-  }
-]
+import { useState, useEffect } from 'react';
+import { supabase } from './supabase';
+import './App.css'; // Essential for importing custom theme and layout styles
 
 function App() {
-  const [user, setUser] = useState(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('') 
+  // --- AUTHENTICATION STATES ---
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // --- DASHBOARD FEATURE STATES ---
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [activeTab, setActiveTab] = useState('browse'); // 'browse' | 'orders' | 'settings' | 'support'
+  const [contactMessage, setContactMessage] = useState({ name: '', email: '', body: '' });
+  const [contactSubmitted, setContactSubmitted] = useState(false);
+
+  // --- EXTENSIVE SELECTION OF PRODUCT MOCK DATA ---
+  const categories = ['All', 'Electronics', 'Peripherals', 'Audio', 'Wearables', 'Accessories'];
   
-  // Separate visibility toggle states for individual fields to prevent cross-triggering
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const products = [
+    { id: 1, title: 'Wireless Over-Ear Headphones', price: 99.99, desc: 'Premium high-quality sound with advanced active noise-canceling technology.', image: '🎧', category: 'Audio', stock: 12, rating: 4.8 },
+    { id: 2, title: 'Smart Fitness Watch Pro', price: 149.99, desc: 'Track your daily health vitals, heart rate, workouts, and sleep in style.', image: '⌚', category: 'Wearables', stock: 8, rating: 4.5 },
+    { id: 3, title: 'RGB Ergonomic Gaming Mouse', price: 49.99, desc: 'Ultra-lightweight design with customizable optical layout and macro profiles.', image: '🖱️', category: 'Peripherals', stock: 25, rating: 4.7 },
+    { id: 4, title: 'Mechanical TKL Keyboard', price: 119.99, desc: 'Hot-swappable linear red switches with robust aluminum construction and RGB.', image: '⌨️', category: 'Peripherals', stock: 14, rating: 4.9 },
+    { id: 5, title: 'True Wireless ANC Earbuds', price: 79.99, desc: 'Compact sweat-proof audio buds featuring immersive bass and transparency modes.', image: '🎙️', category: 'Audio', stock: 19, rating: 4.3 },
+    { id: 6, title: 'UltraWide 4K Gaming Monitor', price: 399.99, desc: '34-inch curved display panel offering 144Hz refresh rate for ultimate clarity.', image: '🖥️', category: 'Electronics', stock: 5, rating: 4.9 },
+    { id: 7, title: 'Dual-Device Wireless Charger', price: 34.99, desc: 'Sleek 15W Qi-certified fast charging station perfect for desks and nightstands.', image: '🔋', category: 'Electronics', stock: 40, rating: 4.2 },
+    { id: 8, title: 'Waterproof Bluetooth Speaker', price: 59.99, desc: 'Rugged outdoor portable audio speaker carrying a 24-hour continuous battery life.', image: '📻', category: 'Audio', stock: 15, rating: 4.6 },
+    { id: 9, title: 'Premium Leather Laptop Sleeve', price: 45.00, desc: 'Handcrafted genuine leather sleeve lined with soft microfiber interior protection.', image: '💼', category: 'Accessories', stock: 10, rating: 4.4 },
+    { id: 10, title: 'HD Wide-Angle Webcam', price: 69.99, desc: '1080p 60fps desktop video streaming camera featuring low-light auto correction.', image: '📷', category: 'Electronics', stock: 22, rating: 4.5 },
+    { id: 11, title: 'Aluminum Desktop Laptop Stand', price: 29.99, desc: 'Ergonomic elevated notebook elevator with heat dissipation ventilation design.', image: '📐', category: 'Accessories', stock: 30, rating: 4.7 },
+    { id: 12, title: 'Smart Home LED Ambient Bar', price: 89.99, desc: 'Syncs dynamic ambient colored lighting setups directly to games, music, or movies.', image: '💡', category: 'Electronics', stock: 7, rating: 4.1 }
+  ];
 
-  const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState({ type: '', text: '' })
-  const [currentPage, setCurrentPage] = useState('signup')
-  const isRegistrationProcessing = useRef(false)
-
-  // Product Management States
-  const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('storeProducts')
-    return saved ? JSON.parse(saved) : defaultProducts
-  })
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [modalMode, setModalMode] = useState('add')
-
-  // Form Fields State snapshots
-  const [productId, setProductId] = useState('')
-  const [prodName, setProdName] = useState('')
-  const [prodBrand, setProdBrand] = useState('')
-  const [prodImage, setProdImage] = useState('')
-  const [prodDesc, setProdDesc] = useState('')
-  const [prodPrice, setProdPrice] = useState('')
-  const [prodStock, setProdStock] = useState('In Stock')
-
-  // Sync state changes with local storage persistence
-  useEffect(() => {
-    localStorage.setItem('storeProducts', JSON.stringify(products))
-  }, [products])
-
-  // Dynamically synchronizes application view states with the browser tab document title
-  useEffect(() => {
-    if (currentPage === 'home') {
-      document.title = 'Dashboard'
-    } else if (currentPage === 'signin') {
-      document.title = 'Sign In'
-    } else if (currentPage === 'signup') {
-      document.title = 'Sign Up'
-    }
-  }, [currentPage])
-
+  // --- SUPABASE SESSION INITIALIZATION ---
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user)
-        setCurrentPage('home') 
-      } else {
-        setUser(null)
-        setCurrentPage('signup') 
-      }
-      setLoading(false)
-    })
+      setUser(session?.user ?? null);
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (isRegistrationProcessing.current) return
+      setUser(session?.user ?? null);
+    });
 
-      if (session?.user) {
-        setUser(session.user)
-        setCurrentPage('home')
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // --- USER AUTHENTICATION HANDLER (FIXED) ---
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (isLogin) {
+        // Runs ONLY for incoming login operations
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        setUser(data.user);
       } else {
-        setUser(null)
+        // Runs ONLY for incoming registration sign-up operations
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (signUpError) throw signUpError;
+        setUser(data.user);
+        alert('Registration successful! Please check your email inbox for verification links.');
       }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const handleAuth = async (e, authType) => {
-    e.preventDefault()
-    setLoading(true)
-    setMessage({ type: '', text: '' })
-
-    const cleanEmail = email.trim()
-    const cleanPassword = password.trim()
-
-    try {
-      if (authType === 'signup') {
-        if (cleanPassword !== confirmPassword.trim()) {
-          throw new Error("Passwords do not match!")
-        }
-
-        isRegistrationProcessing.current = true
-        const { error } = await supabase.auth.signUp({ email: cleanEmail, password: cleanPassword })
-        
-        if (error) {
-          isRegistrationProcessing.current = false
-          if (error.message.toLowerCase().includes('already registered') || error.status === 422) {
-            setMessage({ type: 'error', text: 'User already exists, please sign in.' })
-            return
-          }
-          throw error
-        }
-        
-        await supabase.auth.signOut()
-        setUser(null)
-        setEmail('')
-        setPassword('')
-        setConfirmPassword('')
-        setCurrentPage('signin') 
-        setMessage({ type: 'success', text: 'Account created successfully! Please sign in.' })
-
-        setTimeout(() => {
-          isRegistrationProcessing.current = false
-        }, 500)
-
-      } else if (authType === 'signin') {
-        const { error, data } = await supabase.auth.signInWithPassword({ email: cleanEmail, password: cleanPassword })
-        if (error) throw error
-        
-        setMessage({ type: 'success', text: 'Logged in successfully!' })
-        setUser(data.user)
-
-        setTimeout(() => {
-          setCurrentPage('home')
-          setMessage({ type: '', text: '' }) 
-          setEmail('')
-          setPassword('')
-        }, 1000)
-      }
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+    } catch (err) {
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    setCurrentPage('signup') 
-    setEmail('')
-    setPassword('')
-    setConfirmPassword('')
-    setMessage({ type: '', text: '' })
-  }
-
+  // --- GOOGLE OAUTH FLOW HANDLER ---
   const handleGoogleLogin = async () => {
-    setLoading(true)
-    setMessage({ type: '', text: '' })
+    setError(null);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin }
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (oauthError) throw oauthError;
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // --- SIGN OUT HANDLER ---
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    // Reset secondary local states
+    setCart([]);
+    setFavorites([]);
+    setActiveTab('browse');
+  };
+
+  // --- CART OPERATIONS ---
+  const addToCart = (product) => {
+    setCart((prevCart) => {
+      const existingItem = prevCart.find((item) => item.id === product.id);
+      if (existingItem) {
+        return prevCart.map((item) =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prevCart, { ...product, quantity: 1 }];
+    });
+  };
+
+  const removeFromCart = (productId) => {
+    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
+  };
+
+  const updateQuantity = (productId, amount) => {
+    setCart((prevCart) =>
+      prevCart.map((item) => {
+        if (item.id === productId) {
+          const newQty = item.quantity + amount;
+          return newQty > 0 ? { ...item, quantity: newQty } : item;
+        }
+        return item;
       })
-      if (error) throw error
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message })
-      setLoading(false)
+    );
+  };
+
+  // --- FAVORITES TOGGLE ---
+  const toggleFavorite = (productId) => {
+    setFavorites((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+  };
+
+  // --- FILTERED SELECTION LOGIC ---
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          product.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // --- CALCULATING METRICS ---
+  const cartSubtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  const cartTax = cartSubtotal * 0.08;
+  const cartTotal = cartSubtotal + cartTax;
+  const totalCartItemsCount = cart.reduce((count, item) => count + item.quantity, 0);
+
+  // --- CONTACT SUBMIT LOGIC ---
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    if (contactMessage.name && contactMessage.email && contactMessage.body) {
+      setContactSubmitted(true);
+      setTimeout(() => {
+        setContactSubmitted(false);
+        setContactMessage({ name: '', email: '', body: '' });
+      }, 4000);
     }
-  }
+  };
 
-  // --- Product Modals logic ---
-  const openModal = (mode, id = null) => {
-    setModalMode(mode)
-    if (mode === 'edit' && id) {
-      const prod = products.find(p => p.id === id)
-      if (prod) {
-        setProductId(prod.id)
-        setProdName(prod.name)
-        setProdBrand(prod.brand)
-        setProdImage(prod.image || '')
-        setProdDesc(prod.description || '')
-        setProdPrice(prod.price)
-        setProdStock(prod.availability)
-      }
-    } else {
-      setProductId('')
-      setProdName('')
-      setProdBrand('')
-      setProdImage('')
-      setProdDesc('')
-      setProdPrice('')
-      setProdStock('In Stock')
-    }
-    setIsModalOpen(true)
-  }
-
-  const closeModal = () => setIsModalOpen(false)
-
-  const handleFormSubmit = (e) => {
-    e.preventDefault()
-    const priceNum = parseFloat(prodPrice) || 0
-
-    if (productId) {
-      setProducts(products.map(p => p.id === productId ? { 
-        ...p, name: prodName, brand: prodBrand, image: prodImage.trim(), description: prodDesc.trim(), price: priceNum, availability: prodStock 
-      } : p))
-    } else {
-      const newProduct = {
-        id: Date.now(), name: prodName, brand: prodBrand, image: prodImage.trim(), description: prodDesc.trim(), price: priceNum, availability: prodStock
-      }
-      setProducts([...products, newProduct])
-    }
-    closeModal()
-  }
-
-  const deleteProduct = (id) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      setProducts(products.filter(p => p.id !== id))
-    }
-  }
-
-  if (loading && !user) {
+  // ==========================================
+  // VIEW RENDER A: AUTHENTICATED SYSTEM USER (DASHBOARD PANEL)
+  // ==========================================
+  if (user) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-[#1e252b] text-gray-400">
-        <p>Loading application...</p>
-      </main>
-    )
-  }
-
-  return (
-    <div className="w-full min-h-screen bg-[#1e252b] text-gray-200 font-sans">
-      {currentPage === 'home' && user ? (
-        <div>
-          {/* Responsive Navbar Component Layout */}
-          <nav className="bg-[#181e24] border-b border-gray-800 shadow-md">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
-              <h1 className="text-2xl font-bold tracking-tight text-white cursor-pointer self-start sm:self-auto">
-                Dashboard
-              </h1>
-              <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 sm:space-x-4">
-                <button 
-                  onClick={() => openModal('add')} 
-                  className="flex-1 sm:flex-none text-center bg-[#0d6efd] text-white px-3 sm:px-5 py-2 rounded-lg text-sm sm:text-base font-medium shadow hover:bg-[#0b5ed7] transition-colors whitespace-nowrap"
-                >
-                  + Add Product
-                </button>
-                <button 
-                  onClick={handleSignOut} 
-                  className="flex-1 sm:flex-none text-center bg-transparent border border-gray-600 text-gray-300 px-3 sm:px-5 py-2 rounded-lg text-sm sm:text-base font-medium hover:bg-gray-700 transition-colors whitespace-nowrap"
-                >
-                  Sign Out
-                </button>
-              </div>
+      <div className="min-h-screen bg-[#1e252b] font-sans text-gray-100 flex flex-col antialiased selection:bg-[#00d2ff]/30">
+        
+        {/* Navigation bar Header */}
+        <nav className="bg-[#151a1e] border-b border-gray-800 px-4 sm:px-8 py-4 sticky top-0 z-40 shadow-xl backdrop-blur-md bg-opacity-95 flex justify-between items-center">
+          <div className="flex items-center space-x-8">
+            <span className="text-2xl font-black tracking-wider bg-gradient-to-r from-[#00d2ff] to-[#00b4db] bg-clip-text text-transparent cursor-pointer" onClick={() => setActiveTab('browse')}>
+              NEXUSHUB
+            </span>
+            <div className="hidden md:flex space-x-1">
+              <button 
+                onClick={() => setActiveTab('browse')} 
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === 'browse' ? 'bg-gray-800 text-[#00d2ff]' : 'text-gray-400 hover:text-white hover:bg-gray-800/40'}`}
+              >
+                Browse Shop
+              </button>
+              <button 
+                onClick={() => setActiveTab('orders')} 
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === 'orders' ? 'bg-gray-800 text-[#00d2ff]' : 'text-gray-400 hover:text-white hover:bg-gray-800/40'}`}
+              >
+                Orders
+              </button>
+              <button 
+                onClick={() => setActiveTab('support')} 
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === 'support' ? 'bg-gray-800 text-[#00d2ff]' : 'text-gray-400 hover:text-white hover:bg-gray-800/40'}`}
+              >
+                Contact Support
+              </button>
             </div>
-          </nav>
+          </div>
 
-          {/* Product Dashboard Cards */}
-          <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-white">Products</h2>
-              <div className="text-sm text-gray-400 font-medium">Total Items: {products.length}</div>
-            </div>
+          <div className="flex items-center space-x-4">
+            {/* Action Buttons */}
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2 bg-gray-800/80 border border-gray-700/60 rounded-xl hover:border-[#00d2ff]/40 text-gray-200 hover:text-[#00d2ff] transition-all duration-200"
+            >
+              <span>🛒</span>
+              {totalCartItemsCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-[#00d2ff] text-[#151a1e] font-bold text-xs w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                  {totalCartItemsCount}
+                </span>
+              )}
+            </button>
 
-            {products.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-400 text-lg">No products available. Click "+ Add Product" to get started.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {products.map((product) => {
-                  let badgeColor = "bg-green-900 text-green-300 border border-green-700";
-                  if (product.availability === "Low Stock") badgeColor = "bg-amber-900 text-amber-300 border border-amber-700";
-                  if (product.availability === "Out of Stock") badgeColor = "bg-red-900 text-red-300 border border-red-700";
+            <span className="text-sm text-gray-400 max-w-[160px] truncate hidden lg:inline-block border-l border-gray-800 pl-4">
+              {user.email}
+            </span>
 
-                  return (
-                    <div key={product.id} className="bg-[#212529] rounded-lg border border-gray-700 overflow-hidden flex flex-col justify-between shadow-lg">
-                      <div className="w-full h-64 bg-[#77818a] flex items-center justify-center relative">
-                        <img src={product.image || "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=500"} alt={product.name} className="w-full h-full object-cover" />
-                        <span className={`absolute top-3 right-3 px-2.5 py-0.5 rounded text-xs font-semibold ${badgeColor}`}>
-                          {product.availability}
-                        </span>
-                      </div>
-                      <div className="p-5 space-y-2 flex-grow">
-                        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{product.brand}</div>
-                        <h3 className="text-xl font-semibold text-white">{product.name}</h3>
-                        <p className="text-sm text-gray-400 leading-relaxed">{product.description}</p>
-                        <div className="text-2xl font-bold text-white pt-2">${parseFloat(product.price).toFixed(2)}</div>
-                      </div>
-                      <div className="p-5 pt-0 flex space-x-2">
-                        <button onClick={() => openModal('edit', product.id)} className="flex-1 bg-[#0d6efd] hover:bg-[#0b5ed7] text-white py-2 rounded text-sm font-medium">Edit</button>
-                        <button onClick={() => deleteProduct(product.id)} className="border border-red-600 text-red-500 hover:bg-red-950 px-3 py-2 rounded text-sm">Delete</button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </main>
+            <button 
+              onClick={handleLogout}
+              className="bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-md"
+            >
+              Sign Out
+            </button>
+          </div>
+        </nav>
 
-          {/* Modal Overlay Windows */}
-          {isModalOpen && (
-            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-              <div className="bg-[#2a3038] border border-gray-700 rounded-xl shadow-xl max-w-md w-full overflow-hidden text-left">
-                <div className="bg-[#181e24] px-6 py-4 flex justify-between items-center text-white border-b border-gray-700">
-                  <h3 className="text-lg font-bold">{modalMode === 'edit' ? 'Edit Product' : 'Add New Product'}</h3>
-                  <button onClick={closeModal} className="text-gray-400 hover:text-white text-2xl font-semibold">&times;</button>
+        {/* SHOP CART SIDEBAR PANEL OVERLAY */}
+        {isCartOpen && (
+          <div className="fixed inset-0 z-50 overflow-hidden">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)} />
+            <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+              <div className="w-screen max-w-md bg-[#151a1e] border-l border-gray-800 shadow-2xl flex flex-col">
+                <div className="p-6 border-b border-gray-800 flex justify-between items-center">
+                  <h2 className="text-xl font-bold text-white flex items-center">
+                    <span className="mr-2">Your Basket</span>
+                    <span className="text-sm px-2.5 py-0.5 rounded-full bg-gray-800 text-[#00d2ff]">{totalCartItemsCount}</span>
+                  </h2>
+                  <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-white text-xl p-2 rounded-lg hover:bg-gray-800/50 transition-colors">✕</button>
                 </div>
-                <form onSubmit={handleFormSubmit} className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Product Name</label>
-                    <input type="text" value={prodName} onChange={(e) => setProdName(e.target.value)} required className="w-full px-3 py-2 bg-[#1e252b] border border-gray-600 rounded-lg text-white" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Brand</label>
-                    <input type="text" value={prodBrand} onChange={(e) => setProdBrand(e.target.value)} required className="w-full px-3 py-2 bg-[#1e252b] border border-gray-600 rounded-lg text-white" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Product Image URL</label>
-                    <input type="url" value={prodImage} onChange={(e) => setProdImage(e.target.value)} className="w-full px-3 py-2 bg-[#1e252b] border border-gray-600 rounded-lg text-white" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Product Description</label>
-                    <textarea rows="3" value={prodDesc} onChange={(e) => setProdDesc(e.target.value)} required className="w-full px-3 py-2 bg-[#1e252b] border border-gray-600 rounded-lg text-white resize-none"></textarea>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Price ($)</label>
-                      <input type="number" step="0.01" min="0" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} required className="w-full px-3 py-2 bg-[#1e252b] border border-gray-600 rounded-lg text-white" />
+
+                {/* Cart Body Content */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-20 text-gray-500">
+                      <div className="text-5xl mb-4">🛒</div>
+                      <p className="text-lg font-medium mb-1">Your cart is empty</p>
+                      <p className="text-sm max-w-xs mx-auto">Explore our storefront catalog items to add products to your list.</p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Availability</label>
-                      <select value={prodStock} onChange={(e) => setProdStock(e.target.value)} className="w-full px-3 py-2 bg-[#1e252b] border border-gray-600 rounded-lg text-white">
-                        <option value="In Stock">In Stock</option>
-                        <option value="Low Stock">Low Stock</option>
-                        <option value="Out of Stock">Out of Stock</option>
-                      </select>
+                  ) : (
+                    cart.map((item) => (
+                      <div key={item.id} className="bg-[#1e252b] p-4 rounded-xl border border-gray-800 flex items-center space-x-4">
+                        <div className="text-3xl bg-gray-800 w-12 h-12 flex items-center justify-center rounded-lg">{item.image}</div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-white truncate">{item.title}</h4>
+                          <p className="text-sm text-[#00d2ff] font-bold">${item.price}</p>
+                          <div className="flex items-center space-x-2 mt-2">
+                            <button onClick={() => updateQuantity(item.id, -1)} className="bg-gray-800 hover:bg-gray-700 text-white w-6 h-6 rounded flex items-center justify-center text-xs">-</button>
+                            <span className="text-sm text-gray-200 font-mono w-4 text-center">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1)} className="bg-gray-800 hover:bg-gray-700 text-white w-6 h-6 rounded flex items-center justify-center text-xs">+</button>
+                          </div>
+                        </div>
+                        <button onClick={() => removeFromCart(item.id)} className="text-gray-500 hover:text-red-400 p-2 text-sm">Remove</button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Cart Summary Block Footer */}
+                {cart.length > 0 && (
+                  <div className="p-6 border-t border-gray-800 bg-[#191f24] space-y-4">
+                    <div className="space-y-2 text-sm text-gray-400">
+                      <div className="flex justify-between"><span>Subtotal</span><span className="text-white font-mono">${cartSubtotal.toFixed(2)}</span></div>
+                      <div className="flex justify-between"><span>Estimated Tax (8%)</span><span className="text-white font-mono">${cartTax.toFixed(2)}</span></div>
+                      <div className="flex justify-between text-base font-bold text-white pt-2 border-t border-gray-800">
+                        <span>Total Price</span><span className="text-[#00d2ff] font-mono">${cartTotal.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <button onClick={() => alert('Proceeding to deployment payment gateways integration simulator...')} className="w-full bg-gradient-to-r from-[#00d2ff] to-[#00b4db] text-[#151a1e] font-bold py-3 rounded-xl transition-transform duration-200 transform hover:scale-[1.02]">
+                      Proceed to Checkout
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MAIN BODY LAYOUT SWITCH CONTAINER */}
+        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-8">
+          
+          {/* TAB CONTENT 1: SHOPPING STOREFRONT DISPLAY */}
+          {activeTab === 'browse' && (
+            <>
+              {/* Jumbotron Banner section */}
+              <div className="bg-gradient-to-br from-[#1c2e3d] to-[#151a1e] border border-gray-800 rounded-3xl p-6 sm:p-10 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center relative overflow-hidden shadow-xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#00d2ff]/5 rounded-full filter blur-3xl -z-10" />
+                <div className="mb-6 md:mb-0 max-w-xl">
+                  <span className="text-xs font-bold text-[#00d2ff] tracking-widest uppercase bg-[#00d2ff]/10 px-3 py-1 rounded-full">Summer Tech drop 2026</span>
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-white mt-3 mb-2 tracking-tight">Discover Next-Gen Workspace Hardware</h1>
+                  <p className="text-gray-400 text-sm sm:text-base leading-relaxed">Upgrade your deployment productivity workflows with our curated components catalog listings.</p>
+                </div>
+                <div className="flex space-x-3 w-full sm:w-auto">
+                  <div className="bg-gray-800/40 border border-gray-700/50 px-5 py-3 rounded-2xl flex flex-col"><span className="text-xs text-gray-400">Total Items Available</span><span className="text-xl font-bold text-white font-mono">{products.length}</span></div>
+                  <div className="bg-gray-800/40 border border-gray-700/50 px-5 py-3 rounded-2xl flex flex-col"><span className="text-xs text-gray-400">Your Wishlist</span><span className="text-xl font-bold text-pink-400 font-mono">{favorites.length}</span></div>
+                </div>
+              </div>
+
+              {/* Filtering Controls Bar */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                {/* Search Bar Input */}
+                <div className="relative flex-1 max-w-md">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">🔍</span>
+                  <input 
+                    type="text" 
+                    placeholder="Search product names or features..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-[#151a1e] border border-gray-800 rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#00d2ff]/60 text-white placeholder-gray-500 transition-colors"
+                  />
+                  {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white">✕</button>}
+                </div>
+
+                {/* Category Badges Pills Scroller */}
+                <div className="flex items-center space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap border transition-all duration-200 ${selectedCategory === cat ? 'bg-[#00d2ff] text-[#151a1e] border-[#00d2ff] shadow-md shadow-[#00d2ff]/10' : 'bg-[#151a1e] border-gray-800 text-gray-400 hover:border-gray-700 hover:text-white'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dynamic Products Catalog Grid */}
+              {filteredProducts.length === 0 ? (
+                <div className="text-center py-24 bg-[#151a1e] border border-gray-800 rounded-3xl">
+                  <div className="text-4xl mb-3">🛠️</div>
+                  <h3 className="text-lg font-bold text-white">No products found</h3>
+                  <p className="text-sm text-gray-500 mt-1 max-w-xs mx-auto">We couldn't find matches for your current keyword search queries or filtered parameters.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredProducts.map((product) => (
+                    <div 
+                      key={product.id} 
+                      className="bg-[#151a1e] rounded-2xl border border-gray-800/80 p-5 flex flex-col justify-between hover:border-[#00d2ff]/30 transition-all duration-300 relative group"
+                    >
+                      {/* Favorite Ribbon button */}
+                      <button 
+                        onClick={() => toggleFavorite(product.id)}
+                        className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-[#1e252b]/80 border border-gray-800 flex items-center justify-center text-xs hover:scale-110 active:scale-95 transition-transform"
+                      >
+                        {favorites.includes(product.id) ? '❤️' : '🤍'}
+                      </button>
+
+                      <div>
+                        {/* Display Asset Box */}
+                        <div className="bg-[#1e252b] rounded-xl h-44 flex items-center justify-center text-6xl mb-4 group-hover:scale-[1.02] transition-transform duration-300 select-none">
+                          {product.image}
+                        </div>
+                        
+                        {/* Meta Tags info */}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#00d2ff] bg-[#00d2ff]/5 px-2 py-0.5 rounded-md">{product.category}</span>
+                          <span className="text-xs text-yellow-400 font-medium">★ {product.rating}</span>
+                        </div>
+
+                        <h3 className="text-base font-bold text-white mb-1 group-hover:text-[#00d2ff] transition-colors line-clamp-1">{product.title}</h3>
+                        <p className="text-xs text-gray-400 leading-relaxed mb-4 line-clamp-2">{product.desc}</p>
+                      </div>
+
+                      <div className="pt-3 border-t border-gray-800/60 flex items-center justify-between mt-auto">
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500">Unit Price</span>
+                          <span className="text-lg font-black text-white font-mono">${product.price.toFixed(2)}</span>
+                        </div>
+                        <button 
+                          onClick={() => addToCart(product)}
+                          className="bg-[#1e252b] hover:bg-[#00d2ff] border border-gray-800 hover:border-[#00d2ff] text-gray-300 hover:text-[#151a1e] font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all duration-200 shadow-sm"
+                        >
+                          Add to Cart
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* TAB CONTENT 2: MOCK USER HISTORIC ORDERS LIST */}
+          {activeTab === 'orders' && (
+            <div className="max-w-3xl mx-auto">
+              <h2 className="text-2xl font-extrabold text-white mb-2">Order History Log</h2>
+              <p className="text-sm text-gray-400 mb-6">Review invoices and shipping statuses for historic orders processed under your token profile.</p>
+              
+              <div className="space-y-4">
+                <div className="bg-[#151a1e] border border-gray-800 rounded-2xl p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-gray-800 text-xs text-gray-400">
+                    <div>Order ID: <span className="font-mono text-white">NEX-984321</span></div>
+                    <div>Placed on: <span className="text-white">May 14, 2026</span></div>
+                    <div>Status: <span className="px-2 py-0.5 rounded-md bg-green-500/10 text-green-400 font-bold uppercase">Delivered</span></div>
+                  </div>
+                  <div className="py-4 flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl bg-gray-800 p-2 rounded-lg">🖥️</span>
+                      <div>
+                        <p className="font-bold text-white">UltraWide 4K Gaming Monitor</p>
+                        <p className="text-xs text-gray-500">Qty: 1</p>
+                      </div>
+                    </div>
+                    <span className="font-mono font-bold text-white">$399.99</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#151a1e] border border-gray-800 rounded-2xl p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-gray-800 text-xs text-gray-400">
+                    <div>Order ID: <span className="font-mono text-white">NEX-431092</span></div>
+                    <div>Placed on: <span className="text-white">March 28, 2026</span></div>
+                    <div>Status: <span className="px-2 py-0.5 rounded-md bg-green-500/10 text-green-400 font-bold uppercase">Delivered</span></div>
+                  </div>
+                  <div className="py-4 space-y-3 divide-y divide-gray-800/40 text-sm">
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl bg-gray-800 p-2 rounded-lg">🎧</span>
+                        <div>
+                          <p className="font-bold text-white">Wireless Over-Ear Headphones</p>
+                          <p className="text-xs text-gray-500">Qty: 1</p>
+                        </div>
+                      </div>
+                      <span className="font-mono font-bold text-white">$99.99</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-3">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl bg-gray-800 p-2 rounded-lg">🖱️</span>
+                        <div>
+                          <p className="font-bold text-white">RGB Ergonomic Gaming Mouse</p>
+                          <p className="text-xs text-gray-500">Qty: 2</p>
+                        </div>
+                      </div>
+                      <span className="font-mono font-bold text-white">$99.98</span>
                     </div>
                   </div>
-                  <div className="pt-2 flex justify-end space-x-3">
-                    <button type="button" onClick={closeModal} className="px-4 py-2 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700">Cancel</button>
-                    <button type="submit" className="px-4 py-2 bg-[#0d6efd] text-white rounded-lg hover:bg-[#0b5ed7]">Save Product</button>
-                  </div>
-                </form>
+                </div>
               </div>
             </div>
           )}
-        </div>
-      ) : (
-        /* Authentication Forms */
-        <div className="min-h-screen flex flex-col items-center justify-center p-4">
-          <div className="w-full max-w-md bg-[#2f303a] border border-[#2e303a] rounded-xl shadow-2xl p-8 text-center">
-            <h2 className="text-2xl font-bold mb-6 text-white">
-              {currentPage === 'signup' ? 'Create an Account' : 'Welcome Back'}
-            </h2>
-            
-            {message.text && (
-              <div className={`p-3 mb-4 rounded text-sm text-center font-medium ${message.type === 'success' ? 'bg-green-900/40 text-green-400 border border-green-700' : 'bg-red-900/40 text-red-400 border border-red-700'}`} role="alert">
-                {message.text}
-              </div>
-            )}
 
-            <button type="button" className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-lg bg-[#1f2028] border border-[#2e303a] text-white hover:bg-[#2e303a] transition-all" onClick={handleGoogleLogin} disabled={loading}>
-              <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-              </svg>
-              Continue with Google
-            </button>
-
-            <div className="relative my-6 text-center before:content-[''] before:absolute before:left-0 before:top-1/2 before:w-full before:border-b before:border-gray-700">
-              <span className="relative bg-[#2f303a] px-3 text-sm text-gray-400">or</span>
-            </div>
-
-            <form onSubmit={(e) => handleAuth(e, currentPage)} className="space-y-4 text-left">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email Address</label>
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1f2028] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#0d6efd]"
-                  required
-                />
-              </div>
-
-              {/* Password wrapper with eye toggle element */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">Password</label>
-                <div className="relative w-full">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2 pr-10 bg-[#1f2028] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#0d6efd]"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors focus:outline-none"
-                    title={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.645C3.304 7.551 7.14 4.5 12 4.5c4.757 0 8.593 3.051 10.036 7.177a1.012 1.012 0 0 1 0 .645C20.696 16.449 16.86 19.5 12 19.5c-4.757 0-8.593-3.051-10.036-7.177Z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                      </svg>
-                    )}
-                  </button>
+          {/* TAB CONTENT 3: SUPPORT MESSAGE TICKETING FORM */}
+          {activeTab === 'support' && (
+            <div className="max-w-xl mx-auto bg-[#151a1e] border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-xl">
+              <h2 className="text-xl font-bold text-white mb-2">Submit Technical Ticket</h2>
+              <p className="text-xs text-gray-400 mb-6">Need assistance setting up adapters, configurations, or hardware features? Drop our engineers a note.</p>
+              
+              {contactSubmitted ? (
+                <div className="bg-[#00d2ff]/10 border border-00d2ff]/20 rounded-2xl p-6 text-center text-[#00d2ff]">
+                  <div className="text-4xl mb-2">📥</div>
+                  <p className="font-bold text-lg mb-1">Message Sent Securely</p>
+                  <p className="text-sm text-gray-400">Our engineering desk will dispatch follow-up diagnostics replies within 24 operational hours.</p>
                 </div>
-              </div>
-
-              {/* Confirm Password field with unique toggle tracking (Sign Up only) */}
-              {currentPage === 'signup' && (
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">Confirm Password</label>
-                  <div className="relative w-full">
-                    <input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-3 py-2 pr-10 bg-[#1f2028] border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#0d6efd]"
-                      required={currentPage === 'signup'}
+              ) : (
+                <form onSubmit={handleContactSubmit} className="space-y-4">
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs text-gray-400 font-medium">Your Name</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={contactMessage.name}
+                      onChange={(e) => setContactMessage({...contactMessage, name: e.target.value})}
+                      placeholder="e.g. Alex Mercer"
+                      className="bg-[#1e252b] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00d2ff]/50 transition-colors"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors focus:outline-none"
-                      title={showConfirmPassword ? "Hide password" : "Show password"}
-                    >
-                      {showConfirmPassword ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.645C3.304 7.551 7.14 4.5 12 4.5c4.757 0 8.593 3.051 10.036 7.177a1.012 1.012 0 0 1 0 .645C20.696 16.449 16.86 19.5 12 19.5c-4.757 0-8.593-3.051-10.036-7.177Z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                        </svg>
-                      )}
-                    </button>
                   </div>
-                </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs text-gray-400 font-medium">Callback Email Address</label>
+                    <input 
+                      type="email" 
+                      required 
+                      value={contactMessage.email}
+                      onChange={(e) => setContactMessage({...contactMessage, email: e.target.value})}
+                      placeholder="alex@example.com"
+                      className="bg-[#1e252b] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00d2ff]/50 transition-colors"
+                    />
+                  </div>
+                  <div className="flex flex-col space-y-1.5">
+                    <label className="text-xs text-gray-400 font-medium">Inquiry Description</label>
+                    <textarea 
+                      required 
+                      rows={4}
+                      value={contactMessage.body}
+                      onChange={(e) => setContactMessage({...contactMessage, body: e.target.value})}
+                      placeholder="Describe compilation issues, delivery tracking requests, or system integration feedback..."
+                      className="bg-[#1e252b] border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00d2ff]/50 transition-colors resize-none"
+                    />
+                  </div>
+                  <button type="submit" className="w-full bg-[#00d2ff] hover:bg-[#00b4db] text-[#151a1e] font-bold py-3 rounded-xl text-sm transition-colors mt-2 shadow-md">
+                    Dispatch Ticket
+                  </button>
+                </form>
               )}
+            </div>
+          )}
 
-              <button 
-                type="submit" 
-                className="w-full mt-4 py-2.5 bg-[#c084fc]/15 text-[#c084fc] border-2 border-transparent rounded-lg font-semibold hover:border-[#c084fc]/50 focus:outline-none transition-all disabled:opacity-50" 
-                disabled={loading}
-              >
-                {loading ? 'Processing...' : currentPage === 'signup' ? 'Sign Up' : 'Sign In'}
-              </button>
-            </form>
-
-            <p className="mt-6 text-sm text-gray-400">
-              {currentPage === 'signup' ? 'Already have an account?' : "Don't have an account?"}{' '}
-              <button
-                type="button"
-                className="text-[#c084fc] font-semibold underline bg-none border-none p-0 cursor-pointer ml-1"
-                onClick={() => {
-                  setCurrentPage(currentPage === 'signup' ? 'signin' : 'signup')
-                  setMessage({ type: '', text: '' })
-                  setEmail('')
-                  setPassword('')
-                  setConfirmPassword('')
-                  setShowPassword(false)
-                  setShowConfirmPassword(false)
-                }}
-              >
-                {currentPage === 'signup' ? 'Sign In' : 'Sign Up'}
-              </button>
-            </p>
-          </div>
         </div>
-      )}
+
+        {/* Footer info branding block */}
+        <footer className="bg-[#151a1e] border-t border-gray-800 mt-auto py-6 text-center text-xs text-gray-500 font-medium tracking-wide">
+          &copy; 2026 NEXUSHUB Corporation. Running over production endpoints seamlessly.
+        </footer>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // VIEW RENDER B: UNAUTHENTICATED GUEST USER (GLASSMORPHISM AUTH PORTAL)
+  // ==========================================
+  return (
+    <div className="min-h-screen bg-[#1e252b] font-sans flex items-center justify-center p-4 relative overflow-hidden antialiased selection:bg-[#00d2ff]/30">
+      
+      {/* Background Graphic Blobs */}
+      <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-[#00d2ff]/5 rounded-full filter blur-3xl" />
+      <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full filter blur-3xl" />
+
+      {/* Main Authentication Card Box */}
+      <div className="auth-form w-full max-w-md z-10 transition-all duration-300">
+        <h2 className="tracking-tight">{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+        <p className="subtitle">
+          {isLogin ? 'Please enter your credentials to log in.' : 'Register below to access your global store client dashboard.'}
+        </p>
+
+        {/* Error Notification Alert */}
+        {error && (
+          <div className="error-message flex items-center space-x-2 animate-shake">
+            <span>⚠️</span>
+            <span className="flex-1 text-xs">{error}</span>
+          </div>
+        )}
+
+        {/* Credentials Form Submission */}
+        <form onSubmit={handleAuth} className="space-y-4 mt-6">
+          <div className="form-group">
+            <label className="text-xs font-semibold tracking-wide text-gray-400 uppercase">Email Address</label>
+            <input 
+              type="email" 
+              placeholder="e.g. name@example.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required 
+              className="w-full text-sm"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="text-xs font-semibold tracking-wide text-gray-400 uppercase">Password</label>
+            <div className="password-wrapper relative">
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                placeholder="••••••••" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required 
+                className="w-full text-sm pr-12"
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="password-toggle-btn absolute right-3 inset-y-0 text-xs font-bold text-gray-400 hover:text-[#00d2ff] transition-colors"
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading} className="submit-btn w-full mt-6 font-bold py-3 rounded-xl text-sm tracking-wide shadow-lg">
+            {loading ? 'Processing Workspace...' : isLogin ? 'Sign In to Hub' : 'Complete Registration'}
+          </button>
+        </form>
+
+        {/* Visual Separation Line */}
+        <div className="divider my-6 flex items-center justify-center text-xs text-gray-500 uppercase font-bold tracking-widest">
+          <span className="px-3 bg-[#1e252b] z-10">or continue with</span>
+        </div>
+
+        {/* Google OAuth Access Button */}
+        <button onClick={handleGoogleLogin} className="google-btn w-full flex items-center justify-center py-3 rounded-xl text-sm font-semibold transition-transform duration-200 transform hover:scale-[1.01] active:scale-[0.99] shadow-md">
+          <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            />
+            <path
+              fill="currentColor"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            />
+            <path
+              fill="currentColor"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+            />
+            <path
+              fill="currentColor"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+            />
+          </svg>
+          Google Cloud Identity
+        </button>
+
+        {/* Auth Mode Toggle Link */}
+        <div className="toggle-auth text-center mt-6 text-sm text-gray-400">
+          {isLogin ? "Don't have an account yet? " : "Already registered here? "}
+          <button 
+            onClick={() => { setIsLogin(!isLogin); setError(null); }}
+            className="text-[#00d2ff] hover:underline focus:outline-none ml-1 font-semibold"
+          >
+            {isLogin ? 'Sign Up' : 'Log In'}
+          </button>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
